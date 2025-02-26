@@ -1,0 +1,68 @@
+name: Bug report
+description: Create a bug report to help us improve
+#title: "[BUG]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Please read before submitting a bug report
+        Thanks for taking the time to fill out this bug report. Your feedback helps us improve Kubero.
+        Before you submit, please make sure you have read our [Troubleshooting](https://docs.kubero.dev/Installation/troubleshooting) guide.
+  - type: dropdown
+    id: component
+    attributes:
+      label: Which component(s) is affected?
+      multiple: true
+      options:
+        - Kubero UI
+        - Kubero CLI
+        - Operator
+        - Documentation
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the bug
+      description: A clear and concise description of what the bug is.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: If applicable, explain what needs to be done to experience the bug.
+      placeholder: |
+        1. Go to '...'
+        2. Click on '....'
+        3. Scroll down to '....'
+        4. See error
+    validations:
+      required: false
+  - type: textarea
+    id: expected_bhv
+    attributes:
+      label: Expected behavior
+      description: A clear and concise description of what you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: Provide any screenshots (if applicable) to describe your problem.
+    validations:
+      required: false
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional information
+      description: Is there anything else we should know about this bug report?
+    validations:
+      required: false
+  - type: textarea
+    id: debug
+    attributes:
+      label: Debug information
+      description: Run `kubero debug` and provide the output. (remove sensitive information)
+    validations:
+      required: false

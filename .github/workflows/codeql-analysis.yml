@@ -21,6 +21,11 @@ on:
   pull_request:
     # The branches below must be a subset of the branches above
     branches: [ "main" ]
+    paths-ignore:
+      - 'docs/**'
+      - 'services/**'
+      - 'templates/**'
+      - '.github/**'
   schedule:
     - cron: '39 11 * * 2'
 

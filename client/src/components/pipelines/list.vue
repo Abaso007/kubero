@@ -1,164 +1,245 @@
     <template>
     <v-container>
-        <breadcrumbs :items="breadcrumbItems"></breadcrumbs>
+        <Breadcrumbs :items="breadcrumbItems"></Breadcrumbs>
 
-                <v-row class="justify-space-between">
-                    <v-col cols="6" sm="6" md="6" lg="6" xl="6">
-                        <h1>Pipelines</h1>
-                    </v-col>
-                    <v-spacer />
-                    <v-col class="text-right">
-                        <v-btn
-                        elevation="2"
-                        color="primary"
-                        :to="{ name: 'New Pipeline'}"
-                        >New Pipeline</v-btn>
-                    </v-col>
-                </v-row>
+        <v-row class="justify-space-between">
+            <v-spacer />
+            <v-col class="text-right">
+                <v-btn
+                elevation="2"
+                :disabled="kubero.kubernetesVersion == 'unknown'"
+                color="primary"
+                :to="{ name: 'Pipeline Form', params: { pipeline: 'new' }}"
+                >New Pipeline</v-btn>
+            </v-col>
+        </v-row>
 
-                <v-row v-if="apps && apps.length < 1" class="delay-visible-enter-active">
-                    <v-col cols="12" style="text-align: center;">
-                        <img src="/img/empty.svg" alt="Empty" class="empty" width="100%" style="max-width: 500px; filter: invert(39%) sepia(47%) saturate(584%) hue-rotate(228deg) brightness(95%) contrast(80%);">
-                        <h2>Ready to start building your first pipeline?</h2>
-                    </v-col>
-                </v-row>
+        <v-row v-if="(pipelines && pipelines.length < 1) && kubero.kubernetesVersion != 'unknown'" class="delay-visible-enter-active">
+            <v-alert
+                color="info"
+                icon="mdi-star-outline"
+                            width="40%"
+                            variant="tonal"
+                            prominent
+                            closable
+                >
+                If you find Kubero useful, please consider starring the project 
+                <a href="https://github.com/kubero-dev/kubero" target="_blank">on GitHub</a>. 
+                Your support contributes to the project's growth and development.
+            </v-alert>
+            <v-col cols="12" style="text-align: center;">
+                <img src="/img/empty.svg" alt="Empty" class="empty" width="100%" style="max-width: 500px; filter: invert(39%) sepia(47%) saturate(584%) hue-rotate(228deg) brightness(95%) contrast(80%);">
 
-                <v-row v-for="item in apps" :key="item.name" :id="item.name">
-                    <v-col cols="12">
-                        <v-card elevation="2" outlined color="cardBackground">
-                            <v-card-text>
-                                <v-row>
-                                    <v-col cols="12" sm="12" md="6">
-                                        <a :href="'/#/pipeline/'+item.name+'/apps'">
-                                            <v-card-title>
-                                                <v-icon left :class=" (item.git.repository.admin == true) ? 'connected' : 'disconnected' "></v-icon>
-                                                <span class="text-h5">{{ item.name }}</span>
-                                            </v-card-title>
-                                            <v-card-text>
-                                                <span>{{ item.git.repository.description }}</span>
-                                            </v-card-text>
-                                        </a>
-                                    </v-col>
-                                    <v-col cols="12" sm="12" md="5" style="padding: 26px;">
-                                            <v-chip
-                                                v-for="phase in item.phases" :key="phase.name"
-                                                small
-                                                label
-                                                class="ma-1"
-                                                :color="phase.enabled ? 'green' : ''"
-                                                :text-color="phase.enabled  ? 'white' : ''"
-                                                >
-                                                <v-icon left color="white" v-if="phase.name.includes('review')">
-                                                    mdi-eye-refresh-outline
-                                                </v-icon>
-                                                {{ phase.name }}
-                                            </v-chip>
-                                    </v-col>
+                <h1 style="font-size: 3em;">👋 Welcome to Kubero!</h1>
+                <p>Congratulations on successfully installing Kubero! We're glad to have you on board.</p>
+                <br>
 
-                                    <v-col cols="12" sm="12" md="1">
-                                        <v-btn
-                                        elevation="2"
-                                        fab
-                                        small
-                                        class="ma-2"
-                                        color="secondary"
-                                        @click="deletePipeline(item.name)"
-                                        >
-                                            <v-icon>
-                                                mdi-delete
-                                            </v-icon>
-                                        </v-btn>
-                                        <v-btn
-                                        elevation="2"
-                                        fab
-                                        small
-                                        class="ma-2"
-                                        color="secondary"
-                                        :href="'#/pipeline/'+item.name"
-                                        >
-                                            <v-icon>
-                                                mdi-pencil
-                                            </v-icon>
-                                        </v-btn>
-                                    </v-col>
+                <v-btn
+                elevation="2"
+                color="primary"
+                :to="{ name: 'Pipeline Form', params: { pipeline: 'new' }}"
+                >Create your first pipeline</v-btn>
+            </v-col>
+        </v-row>
+        <v-row v-if="kubero.kubernetesVersion == 'unknown'">
+            <v-alert
+                type="error"
+                prominent
+                title="Kubernetes Connection Error"
+                variant="tonal"
+                >
+                <p>Kubero can't reach your kubernetes cluster. Please proceed with the setup to continue.</p>
 
-                                </v-row>
-                            </v-card-text>
+                <v-btn
+                color="success"
+                class="mt-4"
+                :to="{ name: 'Setup', params: { step: '1' }}"
+                >Start Setup</v-btn>
+            </v-alert>
+        </v-row>
 
-                        </v-card>
-                    </v-col>
-                </v-row>
+        <div class="mt-5"></div>
+        <div v-for="item in pipelines" :key="item.name" :id="item.name">
+            <v-row class="my-0 row">
+                <v-col cols="12" sm="0" md="1"  style="cursor: pointer;" @click="$router.push({ name: 'Pipeline Apps', params: { pipeline: item.name } })">
+                    <img :src="(item.git.repository.admin == true) ? '/img/icons/hexagon3.svg' : '/img/icons/hexagon3-empty-bold-tp.svg'" alt="Pipeline" width="40" height="40">
+                </v-col>
+                <v-col cols="12" sm="11" md="4"  style="cursor: pointer;" @click="$router.push({ name: 'Pipeline Apps', params: { pipeline: item.name } })">
+                        <h3>
+                            <span class="text-h5">{{ item.name }}</span>
+                        </h3>
+                        <p v-if="item.git.repository.admin">
+                            <v-icon start size="small" >mdi-link</v-icon>
+                            <span>{{ item.git.repository.description }}</span>
+                        </p>
+                </v-col>
+                <v-col cols="12" sm="12" md="5" style="cursor: pointer;" @click="$router.push({ name: 'Pipeline Apps', params: { pipeline: item.name } })">
+                        <v-chip
+                            v-for="phase in item.phases" :key="phase.name"
+                            small
+                            label
+                            class="ma-1"
+                            :color="phase.enabled ? 'green' : ''"
+                            :text-color="phase.enabled  ? 'white' : ''"
+                            >
+                            <v-icon start v-if="phase.name.includes('review')" icon="mdi-eye-refresh-outline"></v-icon>
+                            {{ phase.name }}
+                        </v-chip>
+                </v-col>
+
+                <v-col cols="12" sm="12" md="2">
+                    <v-btn
+                    elevation="0"
+                    vartiant="tonal"
+                    size="small"
+                    class="ma-2"
+                    color="secondary"
+                    @click="deletePipeline(item.name)"
+                    >
+                        <v-icon color="primary">
+                            mdi-delete
+                        </v-icon>
+                    </v-btn>
+                    <v-btn
+                    elevation="0"
+                    vartiant="tonal"
+                    size="small"
+                    class="ma-2"
+                    color="secondary"
+                    :to="{ name: 'Pipeline Form', params: { pipeline: item.name }}"
+                    >
+                        <v-icon color="primary">
+                            mdi-pencil
+                        </v-icon>
+                    </v-btn>
+                </v-col>
+
+            </v-row>
+            <v-divider></v-divider>
+        </div>
     </v-container>
 </template>
 
-<script>
+<script lang="ts">
 import axios from "axios";
-export default {
-    sockets: {
-        async updatedPipelines(instances) {
-            console.log("updatedPipelines", instances);
-            let _apps = await this.loadPipelinesList();
-            this.apps = _apps;
-        },
+import { ref, defineComponent } from 'vue'
+import Breadcrumbs from "../breadcrumbs.vue";
+import { useKuberoStore } from '../../stores/kubero'
+import { mapState } from 'pinia'
+import Swal from 'sweetalert2';
+
+type Pipeline = {
+    name: string,
+    git: {
+        repository: {
+            admin: boolean,
+            description: string,
+            clone_url: string,
+            ssh_url: string,
+        }
+    },
+    phases: {
+        name: string,
+        enabled: boolean,
+    }[]
+}
+
+const socket = useKuberoStore().kubero.socket as any;
+
+socket.on('updatedPipelines', (instances: any) => {
+    //console.log("updatedPipelines", instances);
+    loadPipelinesList();
+});
+
+const pipelines = ref([] as Pipeline[]);
+function loadPipelinesList() {
+    axios.get(`/api/pipelines`)
+    .then(response => {
+        pipelines.value = response.data.items;
+    })
+    .catch(error => {
+        console.log(error);
+    });
+}
+
+export default defineComponent({
+    name: 'Pipelines List',
+    setup() {
+        return {
+            pipelines,
+            socket,
+        }
     },
     mounted() {
-        this.loadPipelinesList();
-        
-        // sleep for 1 second till session is loaded
-        setTimeout(() => {
-            if (this.$vuetify.kubernetesVersion === "unknown") {
-                // TODO: use Pinia to maintain a global state
-                // https://pinia.vuejs.org/introduction.html
-                // https://vuex.vuejs.org/
-                // https://vuex.vuejs.org/api/
-                console.log("cant reach kubernetes");
-            }
-        }, 1000);
-        
+        loadPipelinesList();
     },
-
     components: {
-        breadcrumbs: () => import('../breadcrumbs.vue'),
+        Breadcrumbs,
     },
     data () { return {
-        apps: [],
+        pipelines: [] as Pipeline[], 
 
         breadcrumbItems: [
             {
-                text: 'DASHBOARD',
+                title: 'Dashboard.Pipelines',
                 disabled: true,
-                href: '#/',
+                href: '/',
             }
         ],
     }},
+    computed: {
+      ...mapState(useKuberoStore, ['kubero']),
+    },
     methods: {
       async loadPipelinesList() {
         const self = this;
         axios.get(`/api/pipelines`)
         .then(response => {
-            self.apps = response.data.items;
+            self.pipelines = response.data.items;
         })
         .catch(error => {
             console.log(error);
         });
       },
-      deletePipeline(app) {
-        document.querySelector(`#${app}`).style.display = "none";
+      deletePipeline(pipeline: string) {
 
-        axios.delete(`/api/pipelines/${app}`)
-        .then(response => {
-            console.log(response);
-            //this.loadPipelinesList();
+        Swal.fire({
+            title: "Delete Pipeline ”" + pipeline + "” ?",
+            text: "Do you want to delete this pipeline? This action cannot be undone. It will delete all the apps and data associated with this pipeline.",
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonText: "Delete",
+            cancelButtonText: "Cancel",
+            confirmButtonColor: "rgb(var(--v-theme-kubero))",
+            background: "rgb(var(--v-theme-cardBackground))",
+            /*background: "rgb(var(--v-theme-on-surface-variant))",*/
+            color: "rgba(var(--v-theme-on-background),var(--v-high-emphasis-opacity));",
         })
-        .catch(error => {
-            console.log(error);
+        .then((result) => {
+            if (result.isConfirmed) {
+                const element = document.querySelector(`#${pipeline}`) as HTMLElement;
+                if (element) {
+                    element.style.display = "none";
+                }
+
+                axios.delete(`/api/pipelines/${pipeline}`)
+                .then(response => {
+                    //console.log(response);
+                    //this.loadPipelinesList(); //reload not needed?
+                })
+                .catch(error => {
+                    console.log(error);
+                });
+            }
+            return;
         });
+
       },
-      editPipeline(app) {
-        this.$router.push({ name: 'Edit Pipeline', params: { name: app } });
+      editPipeline(pipeline: string) {
+        this.$router.push({ name: 'Edit Pipeline', params: { name: pipeline } });
       },
     },
-}
+});
 </script>
 
 <style lang="scss">
@@ -192,6 +273,10 @@ export default {
     content: "";
 }
 
+.row:hover {
+    background-color: rgb(var(--v-theme-cardBackground));
+}
+
 .disconnected{
     background-image: url('./../../../public/img/icons/disconnected.svg');
     background-size: contain;
@@ -206,4 +291,8 @@ export default {
     visibility: hidden;
     content: "";
 }
+button:where(.swal2-styled)  {
+    color: #FFF !important;
+}
+
 </style>
